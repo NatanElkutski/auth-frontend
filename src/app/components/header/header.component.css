@@ -1,0 +1,37 @@
+.app-shell {
+  height: 100vh;
+}
+.app-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+.app-drawer {
+  width: 280px;
+}
+.drawer-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 12px 0;
+}
+.app-title {
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+.spacer {
+  flex: 1 1 auto;
+}
+.spacer-small {
+  width: 12px;
+}
+.mr-4 {
+  margin-right: 4px;
+}
+.active-link {
+  font-weight: 600;
+  text-decoration: underline;
+}
+.app-content {
+  padding: 16px;
+}

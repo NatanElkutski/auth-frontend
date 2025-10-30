@@ -1,0 +1,89 @@
+<div class="flex flex-col h-full p-4 items-center justify-center">
+  <!-- Loading -->
+  <ng-container *ngIf="fetching(); else loaded">
+    <div class="flex flex-col items-center gap-3 py-10">
+      <mat-progress-spinner mode="indeterminate"></mat-progress-spinner>
+      <p>Loading products...</p>
+    </div>
+  </ng-container>
+
+  <ng-template #loaded>
+    <!-- Error -->
+    <div *ngIf="errorMessage()" class="text-red-600 mb-4">
+      {{ errorMessage() }}
+    </div>
+
+    <!-- Toolbar -->
+    <div class="w-full max-w-6xl mb-4 flex items-center gap-3">
+      <button mat-stroked-button color="primary" (click)="clearFilter()" [disabled]="!filterKey()" class="ml-auto">
+        Clear filter
+      </button>
+    </div>
+
+    <!-- Cards grid -->
+    <div class="w-full max-w-6xl grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+      <div
+        class="max-w-sm rounded overflow-hidden shadow-lg hover:shadow-xl transition bg-white"
+        *ngFor="let product of productsToShow(); trackBy: trackById"
+      >
+        <img class="w-full" [src]="product.thumbnail" [alt]="product.title" />
+
+        <div class="px-6 py-4">
+          <div class="relative max-w-xs">
+            <div class="font-bold text-xl mb-2 line-clamp-1" [appTooltip]="product.title">
+              {{ product.title }}
+            </div>
+          </div>
+
+          <div class="relative max-w-xs">
+            <p class="text-gray-700 text-base line-clamp-4" [appTooltip]="product.description">
+              {{ product.description }}
+            </p>
+          </div>
+        </div>
+
+        <div class="px-6 pt-4 pb-2">
+          <!-- Category chip -->
+          <span
+            (click)="filterProducts('category', product.category)"
+            class="inline-flex items-center bg-gray-200 hover:bg-gray-300 rounded-full px-3 py-1 text-sm font-semibold text-gray-700 mr-2 mb-2 cursor-pointer"
+          >
+            #{{ product.category }}
+            <mat-icon
+              class="ml-1 align-middle text-[0.875rem]! leading-none! w-4! h-4!"
+              (click)="$event.stopPropagation(); clearFilter()"
+            >
+              close
+            </mat-icon>
+          </span>
+
+          <!-- Brand chip -->
+          <span
+            (click)="filterProducts('brand', product.brand)"
+            class="inline-flex items-center bg-gray-200 hover:bg-gray-300 rounded-full px-3 py-1 text-sm font-semibold text-gray-700 mr-2 mb-2 cursor-pointer"
+          >
+            #{{ product.brand }}
+            <mat-icon
+              class="ml-1 align-middle text-[0.875rem]! leading-none! w-4! h-4!"
+              (click)="$event.stopPropagation(); clearFilter()"
+            >
+              close
+            </mat-icon>
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Paginator -->
+    <mat-paginator
+      class="mt-6 w-full max-w-6xl"
+      [length]="filteredProducts().length"
+      [pageSize]="itemsPerPage()"
+      [pageIndex]="currentPage()"
+      [pageSizeOptions]="pageSizeOptions()"
+      [showFirstLastButtons]="true"
+      (page)="onItemsChange($event)"
+    >
+    </mat-paginator>
+  </ng-template>
+</div>

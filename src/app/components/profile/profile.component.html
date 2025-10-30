@@ -1,0 +1,15 @@
+<div class="profile-container">
+  <h2>Profile</h2>
+  <div *ngIf="userData; else loadingOrError">
+    <p><strong>Email:</strong> {{ userData?.email }}</p>
+    <p><strong>User ID:</strong> {{ userData?._id }}</p>
+    <button (click)="onLogout()">Logout</button>
+  </div>
+  <ng-template #loadingOrError>
+    <p *ngIf="errorMessage">{{ errorMessage }}</p>
+    <div *ngIf="!errorMessage" class="loading">
+      <mat-spinner />
+      <p>Loading profile...</p>
+    </div>
+  </ng-template>
+</div>

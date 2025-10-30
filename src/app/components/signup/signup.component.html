@@ -1,0 +1,20 @@
+<div class="auth-container">
+  <h2>Signup</h2>
+
+  <form (submit)="onSignup()">
+    <div>
+      <label for="email">Email:</label>
+      <input type="email" id="email" name="email" required="required" [(ngModel)]="signupData.email" />
+    </div>
+
+    <div>
+      <label for="password">Password:</label>
+      <input type="password" id="password" name="password" required="required" [(ngModel)]="signupData.password" />
+    </div>
+
+    <button type="submit">Sign up</button>
+  </form>
+  <p class="success" *ngIf="successMessage">{{ successMessage }}</p>
+  <p class="error" *ngIf="errorMessage">{{ errorMessage }}</p>
+  <p>have an account? <a routerLink="/login">Login here</a></p>
+</div>
