@@ -1,0 +1,62 @@
+name: Deploy Static Site to DigitalOcean Droplet
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1) Checkout repository
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2) Setup Node and build the app
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Angular app
+        run: npm run build
+
+      # 3) SSH configuration (key + host)
+      - name: Setup SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+        run: |
+          set -e
+          mkdir -p ~/.ssh
+          printf "%s" "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          tr -d '\r' < ~/.ssh/id_rsa > ~/.ssh/id_rsa.clean && mv ~/.ssh/id_rsa.clean ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          PORT="${SSH_PORT:-22}"
+          ssh-keyscan -p "$PORT" -H "$SSH_HOST" >> ~/.ssh/known_hosts
+
+      # 4) Deploy built files to Nginx web root
+      - name: Deploy via rsync
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+        run: |
+          set -e
+          PORT="${SSH_PORT:-22}"
+          ssh -p "$PORT" -i ~/.ssh/id_rsa root@"$SSH_HOST" 'mkdir -p /var/www/'
+          rsync -az --delete -e "ssh -p $PORT -i ~/.ssh/id_rsa" dist/ root@"$SSH_HOST":/var/www/
+
+      # 5) Test and reload Nginx
+      - name: Reload Nginx
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+        run: |
+          set -e
+          PORT="${SSH_PORT:-22}"
+          ssh -p "$PORT" -i ~/.ssh/id_rsa root@"$SSH_HOST" "sudo nginx -t && sudo systemctl reload nginx"
