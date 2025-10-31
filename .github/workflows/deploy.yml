@@ -18,19 +18,12 @@ jobs:
       - run: npm ci
       - run: npm run build
       - name: Load SSH key
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }} # must be the PRIVATE key; no passphrase
-
-      - name: Add remote host to known_hosts
         run: |
-          mkdir -p ~/.ssh
-          ssh-keyscan -p 22 -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
-
+          mkdir -p /.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > /.ssh/id_rsa && chmod 600 /.ssh/id_rsa
       - name: Deploy via scp
         run: |
-          scp -o StrictHostKeyChecking=yes -r dist/* root@${{ secrets.SSH_HOST }}:~/var/www/
-          # if non-standard port: add -P <port>
+          scp -o StrictHostKeyChecking=no -i /.ssh/id_rsa -r ./dist/* ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/var/www/
       - name: Restart Web Server
         run: |
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa root@${{ secrets.SSH_HOST }} "cd /var/www/ && npm install && pm2 restart all"
+          ssh -o StrictHostKeyChecking=no -i /.ssh/id_rsa ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "cd /var/www/ && npm install && pm2 restart all"
