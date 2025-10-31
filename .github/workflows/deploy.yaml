@@ -9,12 +9,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1) Checkout repository
+      # 1) Checkout
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 2) Setup Node and build the app
-      - name: Setup Node.js
+      # 2) Node setup + build
+      - name: Use Node.js 20
         uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -22,41 +22,36 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build Angular app
+      - name: Build app
         run: npm run build
 
-      # 3) SSH configuration (key + host)
-      - name: Setup SSH
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-          SSH_HOST: ${{ secrets.SSH_HOST }}
-          SSH_PORT: ${{ secrets.SSH_PORT }}
-        run: |
-          set -e
-          mkdir -p ~/.ssh
-          printf "%s" "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
-          tr -d '\r' < ~/.ssh/id_rsa > ~/.ssh/id_rsa.clean && mv ~/.ssh/id_rsa.clean ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          PORT="${SSH_PORT:-22}"
-          ssh-keyscan -p "$PORT" -H "$SSH_HOST" >> ~/.ssh/known_hosts
+      # 3) Start ssh-agent and load your key (no files/CRLF headaches)
+      - name: Start ssh-agent and add key
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      # 4) Deploy built files to Nginx web root
+      # 4) Trust the droplet host key
+      - name: Add host key
+        run: |
+          PORT="${{ secrets.SSH_PORT || 22 }}"
+          ssh-keyscan -p "$PORT" -H "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts
+
+      # 5) Ensure rsync exists on the droplet (once it's there, this is a no-op)
+      - name: Ensure rsync on droplet
+        run: |
+          PORT="${{ secrets.SSH_PORT || 22 }}"
+          ssh -p "$PORT" root@${{ secrets.SSH_HOST }} 'command -v rsync >/dev/null 2>&1 || (apt-get update && apt-get install -y rsync)'
+
+      # 6) Deploy built files to /var/www (static hosting)
       - name: Deploy via rsync
-        env:
-          SSH_HOST: ${{ secrets.SSH_HOST }}
-          SSH_PORT: ${{ secrets.SSH_PORT }}
         run: |
-          set -e
-          PORT="${SSH_PORT:-22}"
-          ssh -p "$PORT" -i ~/.ssh/id_rsa root@"$SSH_HOST" 'mkdir -p /var/www/'
-          rsync -az --delete -e "ssh -p $PORT -i ~/.ssh/id_rsa" dist/ root@"$SSH_HOST":/var/www/
+          PORT="${{ secrets.SSH_PORT || 22 }}"
+          ssh -p "$PORT" root@${{ secrets.SSH_HOST }} 'mkdir -p /var/www/'
+          rsync -az --delete -e "ssh -p $PORT" dist/ root@${{ secrets.SSH_HOST }}:/var/www/
 
-      # 5) Test and reload Nginx
+      # 7) Test config and reload Nginx
       - name: Reload Nginx
-        env:
-          SSH_HOST: ${{ secrets.SSH_HOST }}
-          SSH_PORT: ${{ secrets.SSH_PORT }}
         run: |
-          set -e
-          PORT="${SSH_PORT:-22}"
-          ssh -p "$PORT" -i ~/.ssh/id_rsa root@"$SSH_HOST" "sudo nginx -t && sudo systemctl reload nginx"
+          PORT="${{ secrets.SSH_PORT || 22 }}"
+          ssh -p "$PORT" root@${{ secrets.SSH_HOST }} "sudo nginx -t && sudo systemctl reload nginx"
