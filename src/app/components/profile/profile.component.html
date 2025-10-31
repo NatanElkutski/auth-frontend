@@ -3,6 +3,7 @@
   <div *ngIf="userData; else loadingOrError">
     <p><strong>Email:</strong> {{ userData?.email }}</p>
     <p><strong>User ID:</strong> {{ userData?._id }}</p>
+    <p><strong>New Field:</strong> MOTHERFUCKER!</p>
     <button (click)="onLogout()">Logout</button>
   </div>
   <ng-template #loadingOrError>
