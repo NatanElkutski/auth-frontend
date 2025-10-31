@@ -11,23 +11,19 @@ jobs:
     container:
       image: node:20
     steps:
-      - uses: actions/checkout@v4
-
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          node-version: "20"
       - run: npm ci
       - run: npm run build
-
-      - name: Install OpenSSH client
-        run: |
-          apt-get update
-          apt-get install -y --no-install-recommends openssh-client
-
-      - name: Add host key
+      - name: Get SSH Key and set permissions
         run: |
           mkdir -p ~/.ssh
-          ssh-keyscan -p "${{ secrets.SSH_PORT || 22 }}" -H "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts
-
-      - name: Deploy via scp
-        run: scp -P "${{ secrets.SSH_PORT || 22 }}" -i ~/.ssh/id_rsa -r dist/* "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/var/www/"
-
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa && chmod 600 ~/.ssh/id_rsa
+      - name: Deploy to Server
+        run: |
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -r ./dist/* root@${{ secrets.SSH_HOST }}:/var/www/
       - name: Restart Web Server
-        run: ssh -p "${{ secrets.SSH_PORT || 22 }}" -i ~/.ssh/id_rsa "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" 'cd /var/www && npm ci --omit=dev && pm2 restart all'
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa root@${{ secrets.SSH_HOST }} "cd /var/www/ && npm install && pm2 restart all"
