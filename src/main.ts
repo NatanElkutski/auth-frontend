@@ -4,17 +4,6 @@ import { provideAnimations /* or provideNoopAnimations */ } from '@angular/platf
 import { AppComponent } from './app/app.component';
 import { routes } from './app/app.routes';
 import { provideHttpClient, withInterceptors, withInterceptorsFromDi } from '@angular/common/http';
-import { authInterceptor } from './app/interceptors/auth.interceptor';
+import { appConfig } from './app/app.config';
 
-bootstrapApplication(AppComponent, {
-  providers: [
-    provideRouter(
-      routes,
-      withInMemoryScrolling({
-        scrollPositionRestoration: 'enabled',
-      })
-    ),
-    provideAnimations(), // or provideNoopAnimations()
-    provideHttpClient(withInterceptors([authInterceptor])),
-  ],
-});
+bootstrapApplication(AppComponent, appConfig).catch((err) => console.error(err));

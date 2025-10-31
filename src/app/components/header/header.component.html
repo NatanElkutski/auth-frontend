@@ -4,7 +4,7 @@
     [mode]="isHandset() ? 'over' : 'side'"
     [opened]="!isHandset()"
     class="app-drawer"
-    *ngIf="authService.isLoggedIn()"
+    *ngIf="authService.userObservable$ | async"
   >
     <div class="drawer-header">
       <button mat-icon-button (click)="sidenav.close()" *ngIf="isHandset()">

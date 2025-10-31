@@ -23,12 +23,10 @@ export class LoginComponent {
     this.errorMessage = '';
     const { email, password } = this.loginData;
     this.authService.login(email, password).subscribe({
-      next: ({ token }) => {
-        localStorage.setItem('token', token);
-        this.router.navigate(['/home']);
-      },
+      next: () => this.router.navigate(['/home']),
       error: (err) => {
-        this.errorMessage = err?.errors?.message ?? 'Login failed. Please try again.';
+        // minor: typical Angular HttpErrorResponse uses `error`, not `errors`
+        this.errorMessage = err?.error?.message ?? 'Login failed. Please try again.';
       },
     });
   }

@@ -21,9 +21,9 @@ export class ProfileComponent {
 
   ngOnInit(): void {
     this.fetching = true;
-    this.http.get(environment.apiUrl + '/profile').subscribe({
-      next: (response: any) => {
-        this.userData = response.user;
+    this.authService.userObservable$.subscribe({
+      next: (user: any) => {
+        this.userData = user;
         this.fetching = false;
       },
       error: (err) => {

@@ -1,15 +1,15 @@
 import { AuthService } from '../services/auth.service';
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
+import { switchMap, take, map } from 'rxjs/operators';
 
-export const loginGuard: CanActivateFn = (route, state) => {
-  const authService = inject(AuthService);
+export const loginGuard: CanActivateFn = () => {
+  const auth = inject(AuthService);
   const router = inject(Router);
 
-  if (authService.isLoggedIn()) {
-    router.navigate(['/home']);
-    return false;
-  } else {
-    return true;
-  }
+  return auth.loadProfile().pipe(
+    switchMap(() => auth.userObservable$),
+    take(1),
+    map((user) => (user ? router.createUrlTree(['/home']) : true))
+  );
 };
