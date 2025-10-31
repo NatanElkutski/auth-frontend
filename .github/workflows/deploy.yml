@@ -21,16 +21,13 @@ jobs:
           apt-get update
           apt-get install -y --no-install-recommends openssh-client
 
-      - name: Write SSH key (strip CRLF) and known_hosts
+      - name: Add host key
         run: |
           mkdir -p ~/.ssh
-          printf "%s" "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-          tr -d '\r' < ~/.ssh/id_rsa > ~/.ssh/id_rsa.clean && mv ~/.ssh/id_rsa.clean ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts
+          ssh-keyscan -p "${{ secrets.SSH_PORT || 22 }}" -H "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts
 
       - name: Deploy via scp
-        run: scp -i ~/.ssh/id_rsa -r dist/* "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/var/www/"
+        run: scp -P "${{ secrets.SSH_PORT || 22 }}" -i ~/.ssh/id_rsa -r dist/* "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/var/www/"
 
       - name: Restart Web Server
-        run: ssh -i ~/.ssh/id_rsa "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" 'cd /var/www && npm ci --omit=dev && pm2 restart all'
+        run: ssh -p "${{ secrets.SSH_PORT || 22 }}" -i ~/.ssh/id_rsa "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" 'cd /var/www && npm ci --omit=dev && pm2 restart all'
