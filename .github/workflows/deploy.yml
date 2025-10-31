@@ -23,7 +23,7 @@ jobs:
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa && chmod 600 ~/.ssh/id_rsa
       - name: Deploy to Server
         run: |
-          sudo scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -r ./dist/* root@${{ secrets.SSH_HOST }}:~/var/www/
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -r ./dist/* root@${{ secrets.SSH_HOST }}:/var/www/
       - name: Restart Web Server
         run: |
-          sudo ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa root@${{ secrets.SSH_HOST }} "cd ~/var/www/ && npm install && pm2 restart all"
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa root@${{ secrets.SSH_HOST }} "cd /var/www/ && npm install && pm2 restart all"
