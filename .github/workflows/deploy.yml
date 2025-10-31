@@ -2,28 +2,70 @@ name: Deploy Application
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    container:
-      image: node:20
+
     steps:
+      # 1) Checkout
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+
+      # 2) Node setup + build
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
         with:
-          node-version: "20"
-      - run: npm ci
-      - run: npm run build
-      - name: Get SSH Key and set permissions
+          node-version: 20
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      # 3) SSH setup (write key, fix CRLF, permissions, known_hosts)
+      - name: Setup SSH
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
         run: |
+          set -euo pipefail
           mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa && chmod 600 ~/.ssh/id_rsa
-      - name: Deploy to Server
+          printf "%s" "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          # Strip any Windows CR characters (fixes "error in libcrypto")
+          tr -d '\r' < ~/.ssh/id_rsa > ~/.ssh/id_rsa.clean && mv ~/.ssh/id_rsa.clean ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+
+          # Default port to 22 if not provided
+          PORT="${SSH_PORT:-22}"
+
+          # Add host key (must match the exact host & port used below)
+          ssh-keyscan -p "$PORT" -H "$SSH_HOST" >> ~/.ssh/known_hosts
+
+      # 4) Deploy built files
+      - name: Deploy via scp
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
         run: |
-          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -r ./dist/* root@${{ secrets.SSH_HOST }}:/var/www/
+          set -euo pipefail
+          PORT="${SSH_PORT:-22}"
+          # Copy dist/* to /var/www on remote
+          scp -P "$PORT" -i ~/.ssh/id_rsa -r dist/* "${SSH_USER}@${SSH_HOST}:/var/www/"
+
+      # 5) Install server deps (prod) & restart PM2 on remote
       - name: Restart Web Server
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
         run: |
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa root@${{ secrets.SSH_HOST }} "cd /var/www/ && npm install && pm2 restart all"
+          set -euo pipefail
+          PORT="${SSH_PORT:-22}"
+
+          # Use a *login shell* so your PATH and nvm env are loaded (fixes "npm: command not found")
+          ssh -p "$PORT" -i ~/.ssh/id_rsa "${SSH_USER}@${SSH_HOST}" "bash -lc 'cd /var/www && npm ci --omit=dev && pm2 restart all'"
