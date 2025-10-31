@@ -11,19 +11,26 @@ jobs:
     container:
       image: node:20
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-        with:
-          node-version: "20"
+      - uses: actions/checkout@v4
+
       - run: npm ci
       - run: npm run build
-      - name: Load SSH key
+
+      - name: Install OpenSSH client
         run: |
-          mkdir -p /.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > /.ssh/id_rsa && chmod 600 /.ssh/id_rsa
+          apt-get update
+          apt-get install -y --no-install-recommends openssh-client
+
+      - name: Write SSH key (strip CRLF) and known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          printf "%s" "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          tr -d '\r' < ~/.ssh/id_rsa > ~/.ssh/id_rsa.clean && mv ~/.ssh/id_rsa.clean ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts
+
       - name: Deploy via scp
-        run: |
-          scp -o StrictHostKeyChecking=no -i /.ssh/id_rsa -r ./dist/* ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/var/www/
+        run: scp -i ~/.ssh/id_rsa -r dist/* "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/var/www/"
+
       - name: Restart Web Server
-        run: |
-          ssh -o StrictHostKeyChecking=no -i /.ssh/id_rsa ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "cd /var/www/ && npm install && pm2 restart all"
+        run: ssh -i ~/.ssh/id_rsa "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" 'cd /var/www && npm ci --omit=dev && pm2 restart all'
