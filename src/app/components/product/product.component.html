@@ -11,8 +11,9 @@
     <span class="font-medium text-slate-700">{{ p.title }}</span>
   </nav>
 
-  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-    <!-- Left: Gallery -->
+  <!-- Keep ONE grid wrapper for the whole page -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-4">
+    <!-- Left: Gallery (5 cols) -->
     <mat-card class="lg:col-span-5">
       <div class="flex flex-col gap-3">
         <img
@@ -37,7 +38,7 @@
       </div>
     </mat-card>
 
-    <!-- Middle: Info -->
+    <!-- Middle: Info (4 cols) -->
     <div class="lg:col-span-4 flex flex-col gap-4">
       <mat-card>
         <div class="p-2">
@@ -55,7 +56,9 @@
                 {{ i < mathRound(p.rating) ? "star" : "star_border" }}
               </mat-icon>
             </div>
-            <div class="text-sm text-slate-600">{{ p.rating | number : "1.1-1" }} • {{ p.reviews.length | number }} ratings</div>
+            <div class="text-sm text-slate-600">
+              {{ p.rating | number : "1.1-1" }} • {{ p.reviews.length || 0 | number }} ratings
+            </div>
           </div>
 
           <mat-divider class="my-3"></mat-divider>
@@ -63,13 +66,12 @@
           <!-- Price & availability -->
           <div class="flex items-baseline gap-3">
             <div class="text-2xl font-bold text-slate-900">
-              {{ p.price | currency : "USD" : "symbol" : "1.2-2" }}
+              {{ finalPrice(p) | currency : "USD" : "symbol" : "1.2-2" }}
             </div>
-            <div *ngIf="p.price && p.price > p.price" class="text-sm text-slate-500">
+
+            <div *ngIf="hasDiscount(p)" class="text-sm text-slate-500">
               <s>{{ p.price | currency : "USD" }}</s>
-              <span class="ml-1 text-emerald-600 font-medium">
-                Save {{ ((p.price - p.price) / p.price) * 100 | number : "1.0-0" }}%
-              </span>
+              <span class="ml-1 text-emerald-600 font-medium"> Save {{ p.discountPercentage | number : "1.0-0" }}% </span>
             </div>
           </div>
 
@@ -80,7 +82,6 @@
 
           <div *ngIf="p.shippingInformation" class="mt-1 text-sm text-slate-600">
             Delivery: <span class="font-medium">{{ p.shippingInformation }}</span>
-            <!-- <span *ngIf="p.fulfilledBy"> • Fulfilled by {{ p.fulfilledBy }}</span> -->
           </div>
         </div>
       </mat-card>
@@ -88,9 +89,9 @@
       <!-- About / Features -->
       <mat-card>
         <h2 class="text-base font-semibold text-slate-800 mb-2 px-2 pt-2">About this item</h2>
-        <span class="list-disc px-2 pr-3 pb-3 space-y-1 text-sm text-slate-700">
+        <p class="px-2 pr-3 pb-3 text-sm text-slate-700">
           {{ p.description }}
-        </span>
+        </p>
       </mat-card>
 
       <!-- Specs -->
@@ -98,7 +99,9 @@
         <h3 class="text-base font-semibold text-slate-800 mb-2 px-2 pt-2">Product information</h3>
         <div class="px-2 pb-2">
           <div *ngFor="let kv of p.tags | keyvalue" class="grid grid-cols-3 gap-3 py-2 border-b border-slate-100 last:border-b-0">
-            <div class="text-sm text-slate-800">{{ kv.value }}</div>
+            <!-- Adjust keys/values as needed -->
+            <div class="text-sm text-slate-500">{{ kv.key }}</div>
+            <div class="col-span-2 text-sm text-slate-800">{{ kv.value }}</div>
           </div>
         </div>
       </mat-card>
@@ -110,17 +113,18 @@
       </mat-card>
     </div>
 
+    <!-- Mobile divider -->
     <mat-divider *ngIf="isHandset()" class="my-3"></mat-divider>
 
     <!-- Right: Buy box -->
     <mat-card class="lg:col-span-3 h-fit sticky py-2 px-2">
       <div class="flex flex-col gap-3">
         <div class="text-xl font-bold text-slate-900">
-          {{ p.price | currency : "USD" : "symbol" : "1.2-2" }}
+          {{ finalPrice(p) | currency : "USD" : "symbol" : "1.2-2" }}
         </div>
-
-        <div class="text-sm" [ngClass]="p.availabilityStatus ? 'text-emerald-700' : 'text-red-700'">
-          {{ p.availabilityStatus ? "In stock" : "Unavailable" }}
+        <div *ngIf="hasDiscount(p)" class="text-xs text-slate-500 -mt-1">
+          <s>{{ p.price | currency : "USD" }}</s>
+          <span class="ml-1 text-emerald-600 font-medium">Save {{ p.discountPercentage | number : "1.0-0" }}%</span>
         </div>
 
         <mat-form-field appearance="outline" class="w-full">
@@ -159,23 +163,34 @@
         </div>
       </div>
     </mat-card>
+
+    <!-- Reviews: place INSIDE the same grid, span left (5) + middle (4) = 9 cols -->
+    <div class="lg:col-span-9 grid grid-rows-1 gap-1 mb-4">
+      <h2 class="text-lg font-semibold text-slate-800 mb-2">Customer Reviews</h2>
+      <mat-card *ngFor="let review of p.reviews" class="mb-3 p-3">
+        <div class="flex flex-col gap-1">
+          <h3 class="text-base font-semibold text-slate-800">{{ review.reviewerName }}</h3>
+          <p class="text-sm text-slate-700">{{ review.comment }}</p>
+        </div>
+      </mat-card>
+    </div>
   </div>
 
   <!-- Related (optional) -->
-  <!-- <div *ngIf="related?.length" class="mt-8">
+  <div *ngIf="relatedProducts()?.length" class="mt-8">
     <h2 class="text-lg font-semibold text-slate-800 mb-3">Related items</h2>
     <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
       <a
-        *ngFor="let r of related"
-        [routerLink]="['/product', r.id]"
-        class="block border border-slate-200 rounded-lg p-3 hover:shadow-sm transition"
+        *ngFor="let r of relatedProducts()"
+        (click)="goToRelatedProduct(r)"
+        class="block border border-slate-200 rounded-lg p-3 hover:shadow-lg transition"
       >
-        <img class="w-full h-36 object-contain mb-2" [src]="r.imageUrl" [alt]="r.title" />
+        <img class="w-full h-36 object-contain mb-2" [src]="r.thumbnail" [alt]="r.title" />
         <div class="text-sm line-clamp-2 text-slate-800">{{ r.title }}</div>
-        <div class="font-semibold text-slate-900 mt-1">{{ r.price | currency : r.currency }}</div>
+        <div class="font-semibold text-slate-900 mt-1">{{ r.price | currency : "USD" }}</div>
       </a>
     </div>
-  </div> -->
+  </div>
 </ng-container>
 
 <ng-template #loadingTpl>

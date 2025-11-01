@@ -46,4 +46,26 @@ export class ProductsService {
       take(1)
     );
   }
+
+  getProductsByCategory(category: string): Observable<Product[]> {
+    if (!category || category.trim() === '') {
+      return of([]);
+    }
+    const cat = category.trim().toLowerCase();
+
+    return this.http.get<{ products: Product[] }>(`${this.baseUrl}/category/${encodeURIComponent(cat)}`).pipe(
+      map((res) => res.products || []),
+      tap((products) => {
+        products.forEach((p) => {
+          const key = String(p.id);
+          this.cache.set(key, p);
+        });
+      }),
+      catchError((err) => {
+        console.error('getProductsByCategory failed:', err);
+        return of([]);
+      }),
+      take(1)
+    );
+  }
 }

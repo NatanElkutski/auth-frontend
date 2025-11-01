@@ -12,6 +12,7 @@ export const appConfig: ApplicationConfig = {
       routes,
       withInMemoryScrolling({
         scrollPositionRestoration: 'enabled',
+        anchorScrolling: 'disabled',
       })
     ),
     provideAnimations(),
