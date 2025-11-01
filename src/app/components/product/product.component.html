@@ -1,0 +1,181 @@
+<!-- product-details.component.html -->
+<ng-container *ngIf="product() as p; else loadingTpl">
+  <!-- Breadcrumbs -->
+  <nav class="text-sm text-slate-500 mb-3 flex flex-wrap items-center gap-1">
+    <a routerLink="/products" class="text-blue-600 hover:underline">Home</a>
+    <span>›</span>
+    <a [routerLink]="['/category', p.category]" class="text-blue-600 hover:underline">
+      {{ p.category }}
+    </a>
+    <span>›</span>
+    <span class="font-medium text-slate-700">{{ p.title }}</span>
+  </nav>
+
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+    <!-- Left: Gallery -->
+    <mat-card class="lg:col-span-5">
+      <div class="flex flex-col gap-3">
+        <img
+          class="w-full aspect-square object-contain rounded-lg border border-slate-200"
+          [src]="p.images[selectedImageIndex]"
+          [alt]="p.title"
+        />
+
+        <div class="flex gap-2 overflow-x-auto">
+          <button
+            *ngFor="let img of p.images; let i = index"
+            type="button"
+            (click)="selectedImageIndex = i"
+            [class]="
+              'h-16 w-16 flex-shrink-0 rounded-md border ' + (i === selectedImageIndex ? 'border-blue-500' : 'border-slate-200')
+            "
+          >
+            <img class="h-full w-full object-contain" [src]="img" [alt]="p.title + ' ' + (i + 1)" />
+          </button>
+        </div>
+      </div>
+    </mat-card>
+
+    <!-- Middle: Info -->
+    <div class="lg:col-span-4 flex flex-col gap-4">
+      <mat-card>
+        <div class="p-2">
+          <h1 class="text-xl font-semibold text-slate-800">{{ p.title }}</h1>
+
+          <div class="mt-1 text-sm text-slate-600">
+            Brand:
+            <a [routerLink]="['/brand', p.brand]" class="text-blue-600 hover:underline">{{ p.brand }}</a>
+          </div>
+
+          <!-- Rating -->
+          <div *ngIf="p.rating" class="mt-2 flex items-center gap-2">
+            <div class="flex items-center">
+              <mat-icon *ngFor="let s of [1, 2, 3, 4, 5]; let i = index" [class.text-amber-500]="i < mathRound(p.rating)">
+                {{ i < mathRound(p.rating) ? "star" : "star_border" }}
+              </mat-icon>
+            </div>
+            <div class="text-sm text-slate-600">{{ p.rating | number : "1.1-1" }} • {{ p.reviews.length | number }} ratings</div>
+          </div>
+
+          <mat-divider class="my-3"></mat-divider>
+
+          <!-- Price & availability -->
+          <div class="flex items-baseline gap-3">
+            <div class="text-2xl font-bold text-slate-900">
+              {{ p.price | currency : "usd" : "symbol" : "1.2-2" }}
+            </div>
+            <div *ngIf="p.price && p.price > p.price" class="text-sm text-slate-500">
+              <s>{{ p.price | currency : "usd" }}</s>
+              <span class="ml-1 text-emerald-600 font-medium">
+                Save {{ ((p.price - p.price) / p.price) * 100 | number : "1.0-0" }}%
+              </span>
+            </div>
+          </div>
+
+          <div class="mt-1">
+            <span *ngIf="p.availabilityStatus; else oos" class="text-emerald-700 font-medium">In stock</span>
+            <ng-template #oos><span class="text-red-700 font-medium">Currently unavailable</span></ng-template>
+          </div>
+
+          <div *ngIf="p.shippingInformation" class="mt-1 text-sm text-slate-600">
+            Delivery: <span class="font-medium">{{ p.shippingInformation }}</span>
+            <!-- <span *ngIf="p.fulfilledBy"> • Fulfilled by {{ p.fulfilledBy }}</span> -->
+          </div>
+        </div>
+      </mat-card>
+
+      <!-- About / Features -->
+      <mat-card>
+        <h2 class="text-base font-semibold text-slate-800 mb-2 px-2">About this item</h2>
+        <span class="list-disc pl-6 pr-3 pb-3 space-y-1 text-sm text-slate-700">
+          {{ p.description }}
+        </span>
+      </mat-card>
+
+      <!-- Specs -->
+      <mat-card *ngIf="p.tags">
+        <h3 class="text-base font-semibold text-slate-800 mb-2 px-2">Product information</h3>
+        <div class="px-2 pb-2">
+          <div *ngFor="let kv of p.tags | keyvalue" class="grid grid-cols-3 gap-3 py-2 border-b border-slate-100 last:border-b-0">
+            <div class="text-sm text-slate-500">{{ kv.key }}</div>
+            <div class="col-span-2 text-sm text-slate-800">{{ kv.value }}</div>
+          </div>
+        </div>
+      </mat-card>
+
+      <!-- Description -->
+      <mat-card *ngIf="p.description">
+        <h2 class="text-base font-semibold text-slate-800 mb-2 px-2">Description</h2>
+        <div class="prose max-w-none px-2 pb-2">{{ p.description }}</div>
+      </mat-card>
+    </div>
+
+    <!-- Right: Buy box -->
+    <mat-card class="lg:col-span-3 h-fit sticky top-4">
+      <div class="flex flex-col gap-3">
+        <div class="text-xl font-bold text-slate-900">
+          {{ p.price | currency : "usd" : "symbol" : "1.2-2" }}
+        </div>
+
+        <div class="text-sm" [ngClass]="p.availabilityStatus ? 'text-emerald-700' : 'text-red-700'">
+          {{ p.availabilityStatus ? "In stock" : "Unavailable" }}
+        </div>
+
+        <mat-form-field appearance="outline" class="w-full">
+          <mat-label>Qty</mat-label>
+          <mat-select [(value)]="quantity">
+            <mat-option *ngFor="let q of [1, 2, 3, 4, 5, 10]" [value]="q">{{ q }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <button
+          mat-raised-button
+          color="primary"
+          class="w-full"
+          (click)="addToCart(p, quantity)"
+          [disabled]="!p.availabilityStatus"
+        >
+          Add to Cart
+        </button>
+        <button mat-stroked-button color="accent" class="w-full" (click)="buyNow(p)" [disabled]="!p.availabilityStatus">
+          Buy Now
+        </button>
+
+        <div class="text-xs text-slate-500">
+          Ships from <span class="font-medium text-slate-700">{{ p.brand || "Warehouse" }}</span
+          ><br />
+          Sold by <span class="font-medium text-slate-700">{{ p.brand || "Seller" }}</span>
+        </div>
+
+        <div class="flex items-center gap-1 text-xs text-slate-600"><mat-icon>verified_user</mat-icon> Secure transaction</div>
+
+        <mat-divider></mat-divider>
+
+        <div class="flex gap-2">
+          <button mat-stroked-button class="flex-1"><mat-icon>share</mat-icon>&nbsp;Share</button>
+          <button mat-stroked-button class="flex-1"><mat-icon>content_copy</mat-icon>&nbsp;Copy link</button>
+        </div>
+      </div>
+    </mat-card>
+  </div>
+
+  <!-- Related (optional) -->
+  <!-- <div *ngIf="related?.length" class="mt-8">
+    <h2 class="text-lg font-semibold text-slate-800 mb-3">Related items</h2>
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+      <a
+        *ngFor="let r of related"
+        [routerLink]="['/product', r.id]"
+        class="block border border-slate-200 rounded-lg p-3 hover:shadow-sm transition"
+      >
+        <img class="w-full h-36 object-contain mb-2" [src]="r.imageUrl" [alt]="r.title" />
+        <div class="text-sm line-clamp-2 text-slate-800">{{ r.title }}</div>
+        <div class="font-semibold text-slate-900 mt-1">{{ r.price | currency : r.currency }}</div>
+      </a>
+    </div>
+  </div> -->
+</ng-container>
+
+<ng-template #loadingTpl>
+  <div class="py-12 text-center text-slate-500">Loading product…</div>
+</ng-template>

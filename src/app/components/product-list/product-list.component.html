@@ -26,17 +26,30 @@
         class="max-w-sm rounded overflow-hidden shadow-lg hover:shadow-xl transition bg-white"
         *ngFor="let product of productsToShow(); trackBy: trackById"
       >
-        <img class="w-full" [src]="product.thumbnail" [alt]="product.title" />
+        <img
+          class="w-full cursor-pointer"
+          [src]="product.thumbnail"
+          [alt]="product.title"
+          (click)="onProductClick($event, product)"
+        />
 
         <div class="px-6 py-4">
           <div class="relative max-w-xs">
-            <div class="font-bold text-xl mb-2 line-clamp-1" [appTooltip]="product.title">
+            <div
+              class="font-bold text-xl mb-2 line-clamp-1 cursor-pointer"
+              [appTooltip]="product.title"
+              (click)="onProductClick($event, product)"
+            >
               {{ product.title }}
             </div>
           </div>
 
           <div class="relative max-w-xs">
-            <p class="text-gray-700 text-base line-clamp-4" [appTooltip]="product.description">
+            <p
+              class="text-gray-700 text-base line-clamp-4 cursor-pointer"
+              [appTooltip]="product.description"
+              (click)="onProductClick($event, product)"
+            >
               {{ product.description }}
             </p>
           </div>

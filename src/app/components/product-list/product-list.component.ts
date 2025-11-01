@@ -11,17 +11,21 @@ import { MatIconModule } from '@angular/material/icon';
 import { TooltipDirective } from '../../directives/tooltip.directive';
 import { PaginatorIntlService } from '../../services/paginatorIntl.service';
 import { Product } from '../../model/product.model';
+import { Router } from '@angular/router';
+import { ProductsService } from '../../services/products.service';
 
 @Component({
-  selector: 'app-characters',
+  selector: 'app-product-list',
   standalone: true,
   imports: [CommonModule, MatPaginatorModule, MatProgressSpinnerModule, MatButtonModule, MatIconModule, TooltipDirective],
-  templateUrl: './characters.component.html',
-  styleUrls: ['./characters.component.css'],
+  templateUrl: './product-list.component.html',
+  styleUrls: ['./product-list.component.css'],
   providers: [{ provide: MatPaginatorIntl, useClass: PaginatorIntlService }],
 })
-export class CharactersComponent {
+export class ProductListComponent {
   private http = inject(HttpClient);
+  private router = inject(Router);
+  private productService = inject(ProductsService);
   private readonly step = 50;
   readonly fetching = signal(false);
   readonly errorMessage = signal<string | null>(null);
@@ -102,6 +106,12 @@ export class CharactersComponent {
     this.filterKey.set(null);
     this.filterValue.set(null);
     this.currentPage.set(0);
+  }
+
+  onProductClick($event: MouseEvent, product: Product) {
+    $event.stopPropagation();
+    this.productService.setSelectedProduct(product);
+    this.router.navigate(['/products', product.id]);
   }
 
   trackById = (_: number, p: Product) => p.id;
