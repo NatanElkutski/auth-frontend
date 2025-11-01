@@ -13,6 +13,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatCardModule } from '@angular/material/card';
 import { MatSelectModule } from '@angular/material/select';
 import { Product } from '../../model/product.model';
+import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 
 @Component({
   selector: 'app-product',
@@ -36,6 +37,8 @@ export class ProductComponent {
   readonly productId: string | null;
   private route = inject(ActivatedRoute);
   private productService = inject(ProductsService);
+  private bp = inject(BreakpointObserver);
+  isHandset = signal(false);
   product = signal<Product | null>(this.productService.getSelectedProduct());
   selectedImageIndex = 0;
   quantity = 1;
@@ -53,6 +56,10 @@ export class ProductComponent {
         },
       });
     }
+
+    this.bp.observe([Breakpoints.XSmall, Breakpoints.Small]).subscribe((r) => {
+      this.isHandset.set(r.matches);
+    });
   }
 
   addToCart = (p: Product | null, qty: number) => {

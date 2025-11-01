@@ -27,7 +27,8 @@
             type="button"
             (click)="selectedImageIndex = i"
             [class]="
-              'h-16 w-16 flex-shrink-0 rounded-md border ' + (i === selectedImageIndex ? 'border-blue-500' : 'border-slate-200')
+              'cursor-pointer h-16 w-16 shrink-0 rounded-md border ' +
+              (i === selectedImageIndex ? 'border-blue-500' : 'border-slate-200')
             "
           >
             <img class="h-full w-full object-contain" [src]="img" [alt]="p.title + ' ' + (i + 1)" />
@@ -86,34 +87,33 @@
 
       <!-- About / Features -->
       <mat-card>
-        <h2 class="text-base font-semibold text-slate-800 mb-2 px-2">About this item</h2>
-        <span class="list-disc pl-6 pr-3 pb-3 space-y-1 text-sm text-slate-700">
+        <h2 class="text-base font-semibold text-slate-800 mb-2 px-2 pt-2">About this item</h2>
+        <span class="list-disc px-2 pr-3 pb-3 space-y-1 text-sm text-slate-700">
           {{ p.description }}
         </span>
       </mat-card>
 
       <!-- Specs -->
       <mat-card *ngIf="p.tags">
-        <h3 class="text-base font-semibold text-slate-800 mb-2 px-2">Product information</h3>
+        <h3 class="text-base font-semibold text-slate-800 mb-2 px-2 pt-2">Product information</h3>
         <div class="px-2 pb-2">
           <div *ngFor="let kv of p.tags | keyvalue" class="grid grid-cols-3 gap-3 py-2 border-b border-slate-100 last:border-b-0">
-            <div class="text-sm text-slate-500">{{ kv.key }}</div>
-            <div class="col-span-2 text-sm text-slate-800">{{ kv.value }}</div>
+            <div class="text-sm text-slate-800">{{ kv.value }}</div>
           </div>
         </div>
       </mat-card>
 
       <!-- Description -->
       <mat-card *ngIf="p.description">
-        <h2 class="text-base font-semibold text-slate-800 mb-2 px-2">Description</h2>
-        <div class="prose max-w-none px-2 pb-2">{{ p.description }}</div>
+        <h2 class="text-base font-semibold text-slate-800 mb-2 px-2 pt-2">Description</h2>
+        <div class="prose max-w-none pl-2 pr-4 pb-2">{{ p.description }}</div>
       </mat-card>
     </div>
 
-    <mat-divider class="my-3"></mat-divider>
+    <mat-divider *ngIf="isHandset()" class="my-3"></mat-divider>
 
     <!-- Right: Buy box -->
-    <mat-card class="lg:col-span-3 h-fit sticky">
+    <mat-card class="lg:col-span-3 h-fit sticky py-2 px-2">
       <div class="flex flex-col gap-3">
         <div class="text-xl font-bold text-slate-900">
           {{ p.price | currency : "USD" : "symbol" : "1.2-2" }}
